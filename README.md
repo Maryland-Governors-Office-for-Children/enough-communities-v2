@@ -11,6 +11,7 @@ https://maryland-governors-office-for-children.github.io/enough-communities/.
 - **Accurate map.** Real Maryland and county outlines from the U.S. Census Bureau, with the census
   tracts each community serves shaded in.
 - **Close-ups** of the Baltimore area and the Washington, DC suburbs, with every community labeled.
+  On phones the close-ups fit the screen, with larger markers and a list of names to tap.
 - **Figures for every community.** Each pop-up shows the share of children living in poverty and
   the ENOUGH funds awarded, calculated from the same source for all 30 communities.
 - **At-a-glance figures** (communities, census tracts, counties, total funds) worked out from the data,
@@ -21,6 +22,7 @@ https://maryland-governors-office-for-children.github.io/enough-communities/.
 - **About the data** section explaining each figure and why some poverty rates are below 30%.
 - **Accessibility:** keyboard access to every marker, Escape closes a pop-up, skip link, visible focus,
   text contrast that meets WCAG AA, and no motion for visitors who turn it off.
+  The page passes an automated axe-core check (WCAG 2.1 A and AA) with no issues.
 - **Privacy and speed:** fonts are served from this site, so the page makes no third-party requests.
 - **Link previews** when the page is shared on social media or in email.
 

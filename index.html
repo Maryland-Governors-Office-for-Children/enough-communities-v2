@@ -124,8 +124,15 @@
   .inset h3{font-weight:700;font-size:20px;color:var(--navy);margin:0 0 2px}
   .inset .sub{margin:0 0 8px;font-size:14px;color:var(--muted)}
   .inset .scroll{overflow-x:auto}
-  .inset .hint{display:none;margin:0 0 8px;font-size:13px;color:var(--muted)}
-  @media (max-width:680px){.inset .hint{display:block}}
+  .inset .key{display:none;list-style:none;margin:12px 0 2px;padding:0;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:0 16px;border-top:1px solid var(--rule)}
+  .inset.compact .key{display:grid}
+  .inset .key li{border-bottom:1px solid var(--rule)}
+  .inset .key button{display:flex;align-items:baseline;gap:7px;width:100%;font:inherit;font-size:14px;font-weight:500;line-height:1.3;color:var(--navy);background:none;border:0;padding:9px 0;text-align:left;cursor:pointer}
+  .inset .key .ft button{font-weight:700}
+  .inset .key .ft button::before{content:"";flex:0 0 9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 1.5px var(--navy-deep);transform:translateY(-1px)}
+  .inset .key button[aria-pressed="true"]{text-decoration:underline;text-decoration-color:var(--gold);text-decoration-thickness:2px;text-underline-offset:3px}
+  .inset.compact svg{min-width:0}
+  .inset.compact .lab,.inset.compact .lead{display:none}
   .inset svg{display:block;width:100%;max-width:980px;min-width:620px;height:auto;margin:0 auto}
   .inset .bg{fill:var(--water)}
   .inset .state{stroke-width:1}
@@ -258,12 +265,12 @@
   </div>
 </section>
 
-<div class="stats" aria-label="ENOUGH at a glance">
+<main>
+<section class="stats" aria-label="ENOUGH at a glance">
   <ul id="stats"></ul>
   <p class="src">Funding through fiscal year 2027. <a href="#about">About the data</a></p>
-</div>
+</section>
 
-<main>
 <section class="map-section" id="impact-map" aria-labelledby="map-title">
   <h2 id="map-title">Where ENOUGH communities are located</h2>
   <p class="lede" id="map-lede"></p>
@@ -273,6 +280,7 @@
     <li><span class="sw tr" aria-hidden="true"></span>Census tracts the community serves</li>
     <li><span class="sw zn" aria-hidden="true"></span>Area shown in a close-up below</li>
   </ul>
+  <noscript><p class="lede"><strong>The map and community list need JavaScript.</strong> You can find the ENOUGH communities at <a href="https://children.maryland.gov/enough">children.maryland.gov/enough</a>.</p></noscript>
   <div class="map-card">
     <svg id="map-svg" aria-labelledby="map-title" aria-describedby="map-desc"><desc id="map-desc">Map of Maryland with a marker for each ENOUGH community. Each marker opens details. The same information is in the list of all communities below.</desc></svg>
   </div>
@@ -494,11 +502,11 @@ function wrap(s,max){
   if(cut<0) return [s];
   return [s.slice(0,cut).trim(),s.slice(cut).trim()];
 }
-var insetWrap=document.getElementById("insets");
+var insetWrap=document.getElementById("insets"), compactors=[];
 Object.keys(GEO.insets).forEach(function(key){
   var Z=GEO.insets[key], P=projector(Z.frame), W=Z.w, H=Z.h, LC=Z.labelCol;
   var box=document.createElement("div"); box.className="inset"; box.id="inset-"+key;
-  box.innerHTML='<h3>'+esc(Z.title)+'</h3><p class="sub">'+Z.ids.length+' communities. Shaded areas are the census tracts each one serves.</p><p class="hint">Swipe sideways to see the whole close-up.</p><div class="scroll"></div>';
+  box.innerHTML='<h3>'+esc(Z.title)+'</h3><p class="sub">'+Z.ids.length+' communities. Shaded areas are the census tracts each one serves.</p><div class="scroll"></div>';
   insetWrap.appendChild(box);
   var s=el("svg",{viewBox:"0 0 "+W+" "+H,"aria-label":"Close-up map: "+Z.title},box.querySelector(".scroll"));
   el("rect",{"class":"bg",x:0,y:0,width:W,height:H},s);
@@ -513,7 +521,7 @@ Object.keys(GEO.insets).forEach(function(key){
     if(c.two){var a=el("tspan",{x:c.lx},t);a.textContent=nm.replace(" County","");var b=el("tspan",{x:c.lx,dy:15},t);b.textContent="County";}
     else t.textContent=nm;
   });
-  var leadG=el("g",{"aria-hidden":"true"},s), dotG=el("g",{},s), labG=el("g",{},s);
+  var leadG=el("g",{"aria-hidden":"true"},s), dotG=el("g",{},s), labG=el("g",{},s), insetDots=[];
   // Labels sit in a column on each side; leader lines run to the markers.
   var items=Z.ids.map(function(id){var c=BYID[id];var p=P(c.pos[0],c.pos[1]);return {c:c,x:p[0],y:p[1]};});
   var mid=W/2, sides={L:[],R:[]};
@@ -570,7 +578,7 @@ Object.keys(GEO.insets).forEach(function(key){
       var t=el("text",{x:tx,y:ty,"text-anchor":side==="L"?"end":"start"},g);
       it.lines.forEach(function(line,i){var sp=el("tspan",{x:tx,dy:i?16:0},t);sp.textContent=line;});
       bind(g,c);
-      makeDot(dotG,c,P,{fixed:true,noTab:true});
+      insetDots.push(makeDot(dotG,c,P,{fixed:true,noTab:true}));
     });
   });
   // drop any county name that a community label ended up covering
@@ -581,7 +589,32 @@ Object.keys(GEO.insets).forEach(function(key){
   });
   var n=el("text",{"class":"note",x:W-8,y:H-8,"text-anchor":"end","aria-hidden":"true"},s);
   n.textContent="Boundaries: U.S. Census Bureau, 2024";
+
+  /* Phones: drop the label columns, crop to the map, enlarge markers, list the names underneath */
+  var xs=items.map(function(it){return it.x;});
+  var cx0=Math.max(0,Math.min(LC-10,Math.min.apply(null,xs)-30)), cx1=Math.min(W,Math.max(W-LC+10,Math.max.apply(null,xs)+30));
+  var keyList=document.createElement("ol"); keyList.className="key"; keyList.setAttribute("aria-label","Communities in this close-up");
+  Z.ids.map(function(id){return BYID[id];}).sort(function(a,b){return a.name.localeCompare(b.name);}).forEach(function(c){
+    var dot=insetDots.filter(function(d){return d.c===c;})[0];
+    var li=document.createElement("li"); if(c.feat) li.className="ft";
+    var b=document.createElement("button"); b.type="button"; b.textContent=c.name.replace(/\//g,"/\u200B"); b.setAttribute("data-id",c.id);
+    b.addEventListener("click",function(e){e.stopPropagation();show(c,dot.g);});
+    li.appendChild(b); keyList.appendChild(li);
+  });
+  box.appendChild(keyList);
+  var cLabels=[].slice.call(s.querySelectorAll(".county-label"));
+  compactors.push(function(){
+    var on=box.clientWidth<660;
+    if(box.classList.contains("compact")===on) return;
+    box.classList.toggle("compact",on);
+    s.setAttribute("viewBox",on?cx0+" 0 "+(cx1-cx0)+" "+H:"0 0 "+W+" "+H);
+    insetDots.forEach(function(d){var f=d.c.feat;d.pt.setAttribute("r",on?(f?12:9):(f?8:5.5));d.hit.setAttribute("r",on?(f?16:13):(f?12:10));});
+    cLabels.forEach(function(t){var bb=t.getBBox();t.style.display=on&&(bb.x<cx0+4||bb.x+bb.width>cx1-4)?"none":"";});
+    n.setAttribute("x",on?cx1-8:W-8);
+  });
 });
+function applyCompact(){compactors.forEach(function(f){f();});}
+applyCompact(); window.addEventListener("resize",applyCompact);
 
 /* ---------- POP-UPS ---------- */
 var tip=document.getElementById("tip"), hideT=null, current=null, anchor=null, lastShow=0;
@@ -606,7 +639,7 @@ function place(){
 }
 function setActive(id,on){
   var nodes=document.querySelectorAll('[data-id="'+id+'"]');
-  for(var i=0;i<nodes.length;i++){nodes[i].classList.toggle("is-active",on);}
+  for(var i=0;i<nodes.length;i++){nodes[i].classList.toggle("is-active",on);if(nodes[i].tagName==="BUTTON")nodes[i].setAttribute("aria-pressed",on?"true":"false");}
 }
 function show(c,a){
   clearTimeout(hideT);
@@ -658,9 +691,10 @@ function showOnMap(c){
   var reduce=matchMedia("(prefers-reduced-motion: reduce)").matches, done=false;
   function go(){if(done)return;done=true;target.focus({preventScroll:true});show(c,target);setTimeout(function(){jumping=false;},150);}
   hide(); jumping=true;
-  if("onscrollend" in window) window.addEventListener("scrollend",go,{once:true});
   box.scrollIntoView({behavior:reduce?"auto":"smooth",block:"center"});
-  setTimeout(go,reduce?50:1200);
+  // open once the page has stopped moving
+  var last=-1, still=0, t0=Date.now();
+  (function tick(){var y=window.scrollY;if(y===last)still++;else{still=0;last=y;}if(still>=6||Date.now()-t0>1600)go();else requestAnimationFrame(tick);})();
 }
 
 /* ---------- STORY CARDS ---------- */
